@@ -40,7 +40,7 @@ def draw_edge(image, y_coordinates, color, thickness):
 #
 (input_filename, output_filename, gt_row, gt_col) = sys.argv[1:]
 
-input_filename = "test_images/mountain.jpg"
+input_filename = "test_images/mountain5.jpg"
 
 # load in image 
 input_image = Image.open(input_filename)
@@ -56,7 +56,7 @@ for row in edge_strength:
     col_len = len(row)
     break
 
-print col_len, row_len
+# print col_len, row_len
 ############################################
 # Question 1 of the code
 edge_list = []
@@ -70,12 +70,14 @@ for col in range(0, col_len):
 ridge = edge_list
 
 
+# print max(ridge),len(ridge)
+
 # Question 1 ends here and ridge is the answer
 ##############################################
 
 # Calculate P(S_i|S_i-1) or P(S_i|S_i+1)
-def trans_prob(curr, n_curr, cur_col_list):
-    return (curr + n_curr) / (2.0 * len(cur_col_list))
+def trans_prob(curr, n_curr,length):
+    return (length - abs(curr - n_curr))
 
 
 # Calculate P(W|S_i)
@@ -92,27 +94,47 @@ def posterior_prob(trans1, trans2, emis):
 for col in range(0, col_len):
     prob_array = []
     col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
+    length = len(col_list)
+    sum_trans_dif_post = float(0.00001)
+    sum_trans_dif_prev = float(0.00001)
+    tmp=[]
+    tmp1=[]
     for i, row in enumerate(col_list):
+        # print i,row
         # for 1st column there is no previous state
         if col == 0:
-            trans_prob_post = trans_prob(i, ridge[col + 1], col_list)
-            print "transition prob is ",trans_prob_post
-            emis_probs = emis_prob(i, col_list)
+            trans_prob_post = trans_prob(i, ridge[col + 1], length)
+            sum_trans_dif_post += trans_prob_post
+            tmp.append(trans_prob_post)
+            # emis_probs = emis_prob(i, col_list)
+            emis_probs = 1
             prob_array.append(posterior_prob(1, trans_prob_post, emis_probs))
-
+            #prob_array.append(1 + trans_prob_post)
         # for last column there is no next state
         elif col == col_len - 1:
-            trans_prob_prev = trans_prob(i, ridge[col - 1], col_list)
-            emis_probs = emis_prob(i, col_list)
+            trans_prob_prev = trans_prob(i, ridge[col - 1], length)
+            sum_trans_dif_prev += trans_prob_prev
+            tmp1.append(trans_prob_prev)
+            # emis_probs = emis_prob(i, col_list)
+            emis_probs = 1
             prob_array.append(posterior_prob(1, trans_prob_prev, emis_probs))
-
+            #prob_array.append(trans_prob_prev + 1)
         else:
-            trans_prob_prev = trans_prob(i, ridge[col - 1], col_list)
-            trans_prob_post = trans_prob(row, ridge[col + 1], col_list)
-            emis_probs = emis_prob(i, col_list)
+            trans_prob_prev = trans_prob(i, ridge[col - 1], length)
+            sum_trans_dif_prev += trans_prob_prev
+            tmp1.append(trans_prob_prev)
+            trans_prob_post = trans_prob(i, ridge[col + 1], length)
+            sum_trans_dif_post += trans_prob_post
+            tmp.append(trans_prob_post)
+            # emis_probs = emis_prob(i, col_list)
+            emis_probs = 1
             prob_array.append(posterior_prob(trans_prob_prev, trans_prob_post, emis_probs))
+            #prob_array.append(trans_prob_prev+trans_prob_post)
+        # for i in prob_array:
+        #     print i,
+        for i, row in enumerate(col_list):
 
-        print prob_array
+        print sum([i for i in prob_array])
 
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 
