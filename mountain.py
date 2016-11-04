@@ -97,21 +97,20 @@ for col in range(0, col_len):
         if col == 0:
             trans_prob_post = trans_prob(i, ridge[col + 1], col_list)
             print "transition prob is ",trans_prob_post
-            emis_prob = emis_prob(i, col_list)
-            print "emis prob is ",emis_prob
-            prob_array.append(posterior_prob(1, trans_prob_post, emis_prob))
+            emis_probs = emis_prob(i, col_list)
+            prob_array.append(posterior_prob(1, trans_prob_post, emis_probs))
 
         # for last column there is no next state
         elif col == col_len - 1:
             trans_prob_prev = trans_prob(i, ridge[col - 1], col_list)
-            emis_prob = emis_prob(i, col_list)
-            prob_array.append(posterior_prob(1, trans_prob_prev, emis_prob))
+            emis_probs = emis_prob(i, col_list)
+            prob_array.append(posterior_prob(1, trans_prob_prev, emis_probs))
 
         else:
             trans_prob_prev = trans_prob(i, ridge[col - 1], col_list)
             trans_prob_post = trans_prob(row, ridge[col + 1], col_list)
-            emis_prob = emis_prob(i, col_list)
-            prob_array.append(posterior_prob(trans_prob_prev, trans_prob_post, emis_prob))
+            emis_probs = emis_prob(i, col_list)
+            prob_array.append(posterior_prob(trans_prob_prev, trans_prob_post, emis_probs))
 
         print prob_array
 
