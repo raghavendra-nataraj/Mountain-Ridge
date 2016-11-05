@@ -63,15 +63,17 @@ for row in edge_strength:
 # print col_len, row_len
 ############################################
 # Question 1 of the code
-edge_list = []
-for col in range(0, col_len):
-    col_list = [edge_strength[row][col] for row in range(0, row_len)]
-    for state_index, intensity in enumerate(col_list):
-        if intensity == max(col_list):
-            edge_list.append(state_index)
-            break
+def simple():
+    edge_list = []
+    for col in range(0, col_len):
+        col_list = [edge_strength[row][col] for row in range(0, row_len)]
+        for state_index, intensity in enumerate(col_list):
+            if intensity == max(col_list):
+                edge_list.append(state_index)
+                break
+    return edge_list
 
-ridge = edge_list
+
 # print col_len
 ridge = [0] * col_len
 # print ridge
@@ -178,30 +180,33 @@ for col in range(0, col_len):
             # # print x
 
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
-
-ridges = [0] * col_len
-for x in range(0, 10000):
-    #print x
-    for i in range(0, col_len):
-        ridges[i] = random_roll(i)
-
-final_ridge=[]
-for x in range(0, 5000):
+def mcmc():
+    ridges = [0] * col_len
+    for x in range(0, 10000):
+        #print x
+        for i in range(0, col_len):
+            ridges[i] = random_roll(i)
+            
+    final_ridge=[]
+    for x in range(0, 5000):
     # print x
-    for i in range(0, col_len):
-        ridges[i] = random_roll(i)
-    tmp_ridge = ridges[:]
-    final_ridge.append(tmp_ridge)
+        for i in range(0, col_len):
+            ridges[i] = random_roll(i)
+            tmp_ridge = ridges[:]
+        final_ridge.append(tmp_ridge)
 
-rid = array(final_ridge)
-ret_ridge = []
-for col in range(0, col_len):
-    ret_ridge.append(Counter(rid[:,col]).most_common()[0][0])
+    rid = array(final_ridge)
+    ret_ridge = []
+    for col in range(0, col_len):
+        ret_ridge.append(Counter(rid[:,col]).most_common()[0][0])
     # print Counter(col_list).items()
     # print col_list
+    return ret_ridge
 
-imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
-
+#imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
+sim_ridge = simple()
+imsave(output_filename, draw_edge(input_image, sim_ridge, (255, 0,0), 5))
+mcmc_ridge = mcmc()
 # output answer
-imsave(output_filename, draw_edge(input_image, ret_ridge, (255, 0, 0), 5))
+imsave(output_filename, draw_edge(input_image, mcmc_ridge, (0, 0,255), 5))
 # print random_roll(100),row_len
