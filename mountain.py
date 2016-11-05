@@ -82,7 +82,7 @@ def trans_prob(curr, n_curr,length):
 
 # Calculate P(W|S_i)
 def emis_prob(index, col):
-    return (col[index] + (len(col) - index)) / (255.0 * 255 * len(col))
+    return col[index] + (len(col) - index)
 
 
 # Calculate P(S_i|S_i+1,S_i-1,W_i)
@@ -97,6 +97,7 @@ for col in range(0, col_len):
     length = len(col_list)
     sum_trans_dif_post = float(0.00001)
     sum_trans_dif_prev = float(0.00001)
+    sum_emis = float(0.0)
     tmp=[]
     tmp1=[]
     for i, row in enumerate(col_list):
@@ -105,36 +106,37 @@ for col in range(0, col_len):
         if col == 0:
             trans_prob_post = trans_prob(i, ridge[col + 1], length)
             sum_trans_dif_post += trans_prob_post
-            tmp.append(trans_prob_post)
-            # emis_probs = emis_prob(i, col_list)
-            emis_probs = 1
-            prob_array.append(posterior_prob(1, trans_prob_post, emis_probs))
-            #prob_array.append(1 + trans_prob_post)
+            emis_probs = emis_prob(i, col_list)
+            sum_emis+=emis_probs
+            #emis_probs = 1
+            prob_array.append([1, trans_prob_post, emis_probs])
         # for last column there is no next state
         elif col == col_len - 1:
             trans_prob_prev = trans_prob(i, ridge[col - 1], length)
             sum_trans_dif_prev += trans_prob_prev
-            tmp1.append(trans_prob_prev)
-            # emis_probs = emis_prob(i, col_list)
-            emis_probs = 1
-            prob_array.append(posterior_prob(1, trans_prob_prev, emis_probs))
-            #prob_array.append(trans_prob_prev + 1)
+            emis_probs = emis_prob(i, col_list)
+            sum_emis+=emis_probs
+            #emis_probs = 1
+            prob_array.append([trans_prob_prev,1 , emis_probs])
         else:
             trans_prob_prev = trans_prob(i, ridge[col - 1], length)
             sum_trans_dif_prev += trans_prob_prev
-            tmp1.append(trans_prob_prev)
             trans_prob_post = trans_prob(i, ridge[col + 1], length)
             sum_trans_dif_post += trans_prob_post
-            tmp.append(trans_prob_post)
-            # emis_probs = emis_prob(i, col_list)
-            emis_probs = 1
-            prob_array.append(posterior_prob(trans_prob_prev, trans_prob_post, emis_probs))
-            #prob_array.append(trans_prob_prev+trans_prob_post)
-        # for i in prob_array:
-        #     print i,
-        for i, row in enumerate(col_list):
-
-        print sum([i for i in prob_array])
+            emis_probs = emis_prob(i, col_list)
+            sum_emis+=emis_probs
+            #emis_probs = 1
+            prob_array.append([trans_prob_prev, trans_prob_post, emis_probs])
+    tmp = []
+    tmp1 = []
+    tmp2 = []
+    for row in prob_array:
+        tmp.append(row[0]/sum_trans_dif_prev)
+        tmp1.append(row[1]/sum_trans_dif_post)
+        tmp2.append(row[2]/sum_emis)
+    print sum(tmp)
+    print sum(tmp1)
+    print sum(tmp2)
 
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 
