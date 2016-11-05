@@ -193,10 +193,9 @@ for x in range(0, 500):
     final_ridge.append(ridge)
 
 for col in range(0, col_len):
-    col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
-
-
-    print Counter(x)
+    col_list = [int(final_ridge[row][col]) for row in range(0, row_len)]
+    # print Counter(col_list).items()
+    # print col_list
 
 imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
 
