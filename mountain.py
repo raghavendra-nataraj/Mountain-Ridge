@@ -44,7 +44,7 @@ def draw_edge(image, y_coordinates, color, thickness):
 #
 (input_filename, output_filename, gt_row, gt_col) = sys.argv[1:]
 
-input_filename = "test_images/mountain9.jpg"
+input_filename = sys.argv[1]
 
 # load in image 
 input_image = Image.open(input_filename)
@@ -179,26 +179,29 @@ for col in range(0, col_len):
 
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 
-
-# for x in range(0, 1000):
-#     # print x
-#     for i in range(0, col_len):
-#         ridge[i] = random_roll(i)
+ridges = [0] * col_len
+for x in range(0, 10000):
+    #print x
+    for i in range(0, col_len):
+        ridges[i] = random_roll(i)
 
 final_ridge=[]
-for x in range(0, 500):
+for x in range(0, 5000):
     # print x
     for i in range(0, col_len):
-        ridge[i] = random_roll(i)
-    final_ridge.append(ridge)
+        ridges[i] = random_roll(i)
+    tmp_ridge = ridges[:]
+    final_ridge.append(tmp_ridge)
 
+rid = array(final_ridge)
+ret_ridge = []
 for col in range(0, col_len):
-    col_list = [int(final_ridge[row][col]) for row in range(0, row_len)]
+    ret_ridge.append(Counter(rid[:,col]).most_common()[0][0])
     # print Counter(col_list).items()
     # print col_list
 
 imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
 
 # output answer
-imsave(output_filename, draw_edge(input_image, ridge, (255, 0, 0), 5))
+imsave(output_filename, draw_edge(input_image, ret_ridge, (255, 0, 0), 5))
 # print random_roll(100),row_len
