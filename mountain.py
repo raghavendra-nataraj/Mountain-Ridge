@@ -10,6 +10,10 @@ from scipy.ndimage import filters
 from scipy.misc import imsave
 import sys
 import random
+from collections import Counter
+
+global col_len, row_len
+helper_list = {}
 
 
 # calculate "Edge strength map" of an image
@@ -40,7 +44,7 @@ def draw_edge(image, y_coordinates, color, thickness):
 #
 (input_filename, output_filename, gt_row, gt_col) = sys.argv[1:]
 
-input_filename = "test_images/mountain5.jpg"
+input_filename = "test_images/mountain9.jpg"
 
 # load in image 
 input_image = Image.open(input_filename)
@@ -68,7 +72,9 @@ for col in range(0, col_len):
             break
 
 ridge = edge_list
-
+# print col_len
+ridge = [0] * col_len
+# print ridge
 
 # print max(ridge),len(ridge)
 
@@ -76,7 +82,7 @@ ridge = edge_list
 ##############################################
 
 # Calculate P(S_i|S_i-1) or P(S_i|S_i+1)
-def trans_prob(curr, n_curr,length):
+def trans_prob(curr, n_curr, length):
     return (length - abs(curr - n_curr))
 
 
@@ -85,21 +91,42 @@ def emis_prob(index, col):
     return col[index] + (len(col) - index)
 
 
+def random_roll(col):
+    global helper_list
+    dist_list = helper_list[col]
+    x = (random.randint(1, 100)) / 100.0
+    for index in range(len(dist_list) - 1, -1, -1):
+        # print x,dist_list[index], index
+        if (x > dist_list[index]):
+            return index
+
+
 # Calculate P(S_i|S_i+1,S_i-1,W_i)
-def posterior_prob(trans1, trans2, emis):
-    return trans1 * trans2 * emis
+def posterior_prob(prev, post, emis, column):
+    if column == 0:
+        # print "dsdsdsd", post, emis
+        return post * emis
+    elif column == col_len - 1:
+        # print "aaa", prev, emis
+        # print prev,emis
+        return prev * emis
+    else:
+        # print "asd", prev, post, emis
+        return prev * post * emis
 
 
+prob_array = {}
+posterior_prob_list = {}
 # Gibb's sampling
 for col in range(0, col_len):
-    prob_array = []
     col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
     length = len(col_list)
     sum_trans_dif_post = float(0.00001)
     sum_trans_dif_prev = float(0.00001)
     sum_emis = float(0.0)
-    tmp=[]
-    tmp1=[]
+    prob_array[col] = {}
+    posterior_prob_list[col] = {}
+    helper_list[col] = {}
     for i, row in enumerate(col_list):
         # print i,row
         # for 1st column there is no previous state
@@ -107,38 +134,72 @@ for col in range(0, col_len):
             trans_prob_post = trans_prob(i, ridge[col + 1], length)
             sum_trans_dif_post += trans_prob_post
             emis_probs = emis_prob(i, col_list)
-            sum_emis+=emis_probs
-            #emis_probs = 1
-            prob_array.append([1, trans_prob_post, emis_probs])
+            sum_emis += emis_probs
+            # print trans_prob_post, 1, emis_probs
+            # emis_probs = 1
+            prob_array[col][i] = ([1, trans_prob_post, emis_probs])
+            # print prob_array[col][i]
+
         # for last column there is no next state
         elif col == col_len - 1:
             trans_prob_prev = trans_prob(i, ridge[col - 1], length)
             sum_trans_dif_prev += trans_prob_prev
             emis_probs = emis_prob(i, col_list)
-            sum_emis+=emis_probs
-            #emis_probs = 1
-            prob_array.append([trans_prob_prev,1 , emis_probs])
+            sum_emis += emis_probs
+            prob_array[col][i] = ([trans_prob_prev, 1, emis_probs])
+            # print prob_array[col][i]
+
         else:
             trans_prob_prev = trans_prob(i, ridge[col - 1], length)
             sum_trans_dif_prev += trans_prob_prev
             trans_prob_post = trans_prob(i, ridge[col + 1], length)
             sum_trans_dif_post += trans_prob_post
             emis_probs = emis_prob(i, col_list)
-            sum_emis+=emis_probs
-            #emis_probs = 1
-            prob_array.append([trans_prob_prev, trans_prob_post, emis_probs])
-    tmp = []
-    tmp1 = []
-    tmp2 = []
-    for row in prob_array:
-        tmp.append(row[0]/sum_trans_dif_prev)
-        tmp1.append(row[1]/sum_trans_dif_post)
-        tmp2.append(row[2]/sum_emis)
-    print sum(tmp)
-    print sum(tmp1)
-    print sum(tmp2)
+            sum_emis += emis_probs
+            # emis_probs = 1
+            prob_array[col][i] = ([trans_prob_prev, trans_prob_post, emis_probs])
+            # print prob_array[col][i]
+    sum_of_col = 0
+    for index, row in enumerate(prob_array[col]):
+        probs = prob_array[col][index]
+        posterior_prob_list[col][index] = posterior_prob(probs[0] / sum_trans_dif_prev, probs[1] / sum_trans_dif_post,
+                                                         probs[2] / sum_emis, col)
+        sum_of_col += posterior_prob_list[col][index]
+    # print posterior_prob_list[0]
+
+    for index, prob in enumerate(posterior_prob_list[col]):
+        if index == 0:
+            helper_list[col][index] = (posterior_prob_list[col][index] / sum_of_col)
+        else:
+            helper_list[col][index] = (posterior_prob_list[col][index] / sum_of_col + helper_list[col][index - 1])
+            # print helper_list[col]
+            #
+            # x = random.randint(0,1)
+            # # print x
 
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 
+
+# for x in range(0, 1000):
+#     # print x
+#     for i in range(0, col_len):
+#         ridge[i] = random_roll(i)
+
+final_ridge=[]
+for x in range(0, 500):
+    # print x
+    for i in range(0, col_len):
+        ridge[i] = random_roll(i)
+    final_ridge.append(ridge)
+
+for col in range(0, col_len):
+    col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
+
+
+    print Counter(x)
+
+imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
+
 # output answer
 imsave(output_filename, draw_edge(input_image, ridge, (255, 0, 0), 5))
+# print random_roll(100),row_len
