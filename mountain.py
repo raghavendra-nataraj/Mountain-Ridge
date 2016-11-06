@@ -189,14 +189,18 @@ for col in range(0, col_len):
 def mcmc(ridges):
     #ridges = [0] * col_len
     for x in range(0, 2000):
-        #print x
-        for i in range(0, col_len):
+        col = (random.randint(1, col_len-1))
+        for i in range(col, -1,-1):
+            ridges[i] = random_roll(i)
+        for i in range(col+1, col_len):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
     for x in range(0, 12000):
-    # print x
-        for i in range(0, col_len):
+        col = (random.randint(1, col_len-1))
+        for i in range(col-1, -1,-1):
+            ridges[i] = random_roll(i)
+        for i in range(col+1, col_len):
             ridges[i] = random_roll(i)
             tmp_ridge = ridges[:]
         final_ridge.append(tmp_ridge)
