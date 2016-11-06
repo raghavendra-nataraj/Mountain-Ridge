@@ -89,7 +89,8 @@ ridge = [0] * col_len
 
 # Calculate P(S_i|S_i-1) or P(S_i|S_i+1)
 def trans_prob(curr, n_curr, length):
-    return (length - abs(curr - n_curr))
+    weight = 2
+    return (length - abs(curr - n_curr))**weight
 
 
 # Calculate P(W|S_i)
@@ -110,17 +111,16 @@ def random_roll(col):
 
 # Calculate P(S_i|S_i+1,S_i-1,W_i)
 def posterior_prob(prev, post, emis, column):
-    weight = 2
     if column == 0:
         # print "dsdsdsd", post, emis
-        return (post**weight) * (emis/2)
+        return (post) * (emis/2)
     elif column == col_len - 1:
         # print "aaa", prev, emis
         # print prev,emis
-        return (prev**weight) * (emis/2)
+        return (prev) * (emis/2)
     else:
         # print "asd", prev, post, emis
-        return ((prev * post)**weight) * (emis/2)
+        return ((prev * post)) * (emis/2)
 
 
 prob_array = {}
