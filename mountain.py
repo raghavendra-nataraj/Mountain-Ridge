@@ -95,7 +95,7 @@ def trans_prob(curr, n_curr, length):
 
 # Calculate P(W|S_i)
 def emis_prob(index, col):
-    return (col[index] )* ((len(col)-index))
+    return (col[index]**(0.90))#* ((len(col)-index))
 
 
 def random_roll(col):
