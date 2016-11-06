@@ -94,7 +94,7 @@ def trans_prob(curr, n_curr, length):
 
 # Calculate P(W|S_i)
 def emis_prob(index, col):
-    return (col[index] )# * ((len(col)-index))#**3
+    return (col[index] )* ((len(col)-index))
 
 
 def random_roll(col):
@@ -105,6 +105,7 @@ def random_roll(col):
         # print x,dist_list[index], index
         if (x > dist_list[index]):
             return index
+    return 0
 
 
 # Calculate P(S_i|S_i+1,S_i-1,W_i)
@@ -112,14 +113,14 @@ def posterior_prob(prev, post, emis, column):
     weight = 2
     if column == 0:
         # print "dsdsdsd", post, emis
-        return (post**weight) * emis
+        return (post**weight) * (emis/2)
     elif column == col_len - 1:
         # print "aaa", prev, emis
         # print prev,emis
-        return (prev**weight) * emis
+        return (prev**weight) * (emis/2)
     else:
         # print "asd", prev, post, emis
-        return ((prev * post)**weight) * emis
+        return ((prev * post)**weight) * (emis/2)
 
 
 prob_array = {}
@@ -187,13 +188,13 @@ for col in range(0, col_len):
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 def mcmc(ridges):
     #ridges = [0] * col_len
-    for x in range(0, 5000):
+    for x in range(0, 2000):
         #print x
         for i in range(0, col_len):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
-    for x in range(0, 10000):
+    for x in range(0, 12000):
     # print x
         for i in range(0, col_len):
             ridges[i] = random_roll(i)
@@ -211,7 +212,7 @@ def mcmc(ridges):
 def usr_mcmc(ridges,col,row):
     #ridges = [0] * col_len
     ridges = [row]*col_len
-    for x in range(0, 5000):
+    for x in range(0, 2000):
         #print x
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
@@ -219,7 +220,7 @@ def usr_mcmc(ridges,col,row):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
-    for x in range(0, 10000):
+    for x in range(0, 12000):
     # print x
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
@@ -247,10 +248,10 @@ mcmc_ridge = mcmc(sim_ridge)
 # output answer
 imsave(output_filename, draw_edge(input_image, mcmc_ridge, (0, 0,255), 5))
 
-#mcmc_usr_ridge = usr_mcmc(sim_ridge,x_axis,y_axis)
+mcmc_usr_ridge = usr_mcmc(sim_ridge,x_axis,y_axis)
 # output answer
-#imsave(output_filename, draw_edge(input_image, mcmc_usr_ridge, (0, 255,0), 5))
-
-
+imsave(output_filename, draw_edge(input_image, mcmc_usr_ridge, (0, 255,0), 5))
+'''
 # print random_roll(100),row_len
-#imsave(output_filename,draw_edge1(input_image,x_axis, y_axis, (0, 0,255), 5))
+imsave(output_filename,draw_edge1(input_image,x_axis, y_axis, (0, 0,255), 5))
+'''
