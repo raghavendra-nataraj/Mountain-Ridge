@@ -1,6 +1,12 @@
 #!/usr/bin/python
 #
 # Mountain ridge finder
+
+# Your names and user ids:
+#   Sarvothaman Madhavan    -   madhavas
+#   Raghavendra Nataraj     -   natarajr
+#   Prateek Srivastava      -   pratsriv
+
 # Based on skeleton code by D. Crandall, Oct 2016
 #
 '''
