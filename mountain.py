@@ -231,7 +231,7 @@ def mcmc(ridges):
     # print col_list
     return ret_ridge
 
-def usr_mcmc(ridges,col,row):
+def usr_mcmc(ridges,col,):
     #ridges = [0] * col_len
     ridges = [row]*col_len
     for x in range(0, 2000):
@@ -260,8 +260,8 @@ def usr_mcmc(ridges,col,row):
     return ret_ridge
 
 
-x_axis = int(sys.argv[3])
-y_axis = int(sys.argv[4])
+x_axis = int(sys.argv[4])
+y_axis = int(sys.argv[3])
 #imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
 
 sim_ridge = simple()
