@@ -3,7 +3,22 @@
 # Mountain ridge finder
 # Based on skeleton code by D. Crandall, Oct 2016
 #
+'''
+Read Me
+Output Color :
+		Simplified				-	red
+		MCMC					-	blue
+		MCMC with user input	-	green
 
+In simplified we have taken only the max of the edge strength, because P(S) is constant. (i.e Apriori, each row is 
+equally likely to contain the mountain ridge)
+In MCMC we define the probability based on edge strenght and the transition from previous row and previous column. 
+
+If more importance(Weight) is given to edge strength then image which the moutains are clear are geeting good results but images with mountains out of scope the results are bad. If i give more inportance(Weight) to transistion probability then if a wrong point is calculated in picture then that is carried over to next points. So the results goes bad in clear mountains. 
+
+The user input does not help to great extent in finding the ridges. It helps in finding few points but it normalizes as we progress and we get back the results very similar to MCMC. 
+
+'''
 from PIL import Image
 from numpy import *
 from scipy.ndimage import filters
