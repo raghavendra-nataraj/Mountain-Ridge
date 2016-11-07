@@ -214,7 +214,7 @@ def mcmc(ridges):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
-    for x in range(0, 12000):
+    for x in range(0, 7000):
         col = (random.randint(1, col_len-1))
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
@@ -231,7 +231,7 @@ def mcmc(ridges):
     # print col_list
     return ret_ridge
 
-def usr_mcmc(ridges,col,):
+def usr_mcmc(ridges,col,row):
     #ridges = [0] * col_len
     ridges = [row]*col_len
     for x in range(0, 2000):
@@ -242,7 +242,7 @@ def usr_mcmc(ridges,col,):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
-    for x in range(0, 12000):
+    for x in range(0, 7000):
     # print x
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
