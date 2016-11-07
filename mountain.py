@@ -21,6 +21,7 @@ If more importance(Weight) is given to edge strength then image which the moutai
 
 The user input does not help to great extent in finding the ridges. It helps in finding few points but it normalizes as we progress and we get back the results very similar to MCMC. 
 
+Note : Time for each image takes around 45 seconds to complete all three methodologies.
 '''
 from PIL import Image
 from numpy import *
@@ -206,7 +207,7 @@ for col in range(0, col_len):
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 def mcmc(ridges):
     #ridges = [0] * col_len
-    for x in range(0, 2000):
+    for x in range(0, 1000):
         col = (random.randint(1, col_len-1))
         for i in range(col, -1,-1):
             ridges[i] = random_roll(i)
@@ -214,7 +215,7 @@ def mcmc(ridges):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
-    for x in range(0, 7000):
+    for x in range(0, 2000):
         col = (random.randint(1, col_len-1))
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
@@ -234,7 +235,7 @@ def mcmc(ridges):
 def usr_mcmc(ridges,col,row):
     #ridges = [0] * col_len
     ridges = [row]*col_len
-    for x in range(0, 2000):
+    for x in range(0, 1000):
         #print x
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
@@ -242,7 +243,7 @@ def usr_mcmc(ridges,col,row):
             ridges[i] = random_roll(i)
             
     final_ridge=[]
-    for x in range(0, 7000):
+    for x in range(0, 2000):
     # print x
         for i in range(col-1, -1,-1):
             ridges[i] = random_roll(i)
