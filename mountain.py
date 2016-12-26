@@ -78,6 +78,8 @@ def draw_edge1(image,x, y, color, thickness):
 (input_filename, output_filename, gt_row, gt_col) = sys.argv[1:]
 
 input_filename = sys.argv[1]
+x_axis = int(sys.argv[4])
+y_axis = int(sys.argv[3])
 
 # load in image 
 input_image = Image.open(input_filename)
@@ -132,6 +134,32 @@ def hmm_viterbi():
     value,ridgev = min(results,key=operator.itemgetter(0))
     return ridgev
 
+
+def hmm_viterbi_user():
+    viterbi = {}
+    viterbi[0] = {}
+    col_list = [int(edge_strength[row][0]) for row in range(0, row_len)]
+    length = len(col_list)
+    for row in range(0,row_len):
+        viterbi[0][row] = (float(emis_pu(0,row)),[row])
+    for col in range(1,col_len):
+        viterbi[col] = {}
+        col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
+        for row in range(0,row_len):
+            results =  []
+            for row_k in range(0,row_len):
+                tmpval = viterbi[col-1][row_k][0] + trans_pu(row_k,row)
+                results.append((tmpval,viterbi[col-1][row_k][1]))
+            value,ridgev = min(results,key=operator.itemgetter(0))
+            ridgetmp = deepcopy(ridgev)
+            ridgetmp.append(row)
+            viterbi[col][row] = ((value + emis_pu(col,row)),ridgetmp)
+    results =  []
+    for row in range(0,row_len):
+        results.append(viterbi[col_len-1][row])
+    value,ridgev = min(results,key=operator.itemgetter(0))
+    return ridgev
+
 # print col_len
 ridge = [0] * col_len
 # print ridge
@@ -143,193 +171,97 @@ ridge = [0] * col_len
 
 def trans_p(curr, n_curr):
     return t_prob[curr][n_curr]
-# Calculate P(S_i|S_i-1) or P(S_i|S_i+1)
-def trans_prob(curr, n_curr, length):
-    weight = 20
-    return (length - abs(curr - n_curr))**weight
 
 
 # Calculate P(W|S_i)
 def emis_p(col,row):
     return e_prob[col][row]
 
+def trans_pu(curr, n_curr):
+    return t_prob_u[curr][n_curr]
+
+
+# Calculate P(W|S_i)
+def emis_pu(col,row):
+    return e_prob_u[col][row]
+
+
+# Calculate P(S_i|S_i-1) or P(S_i|S_i+1)
+def trans_prob(curr, n_curr, length):
+    weight = 20
+    return (length - abs(curr - n_curr))**weight
+
 # Calculate P(W|S_i)
 def emis_prob(index, col):
     return (col[index])* ((len(col)-index))
 
 
-def random_roll(col):
-    global helper_list
-    dist_list = helper_list[col]
-    x = (random.randint(1, 100)) / 100.0
-    for index in range(len(dist_list) - 1, -1, -1):
-        # print x,dist_list[index], index
-        if (x > dist_list[index]):
-            return index
-    return 0
+def trans_prob_user(curr, n_curr, length):
+    weight = 20
+    return (((1) *  (length - abs(y_axis - curr))**weight))
 
 
-# Calculate P(S_i|S_i+1,S_i-1,W_i)
-def posterior_prob(prev, post, emis, column):
-    if column == 0:
-        # print "dsdsdsd", post, emis
-        return (post) * (emis/2)
-    elif column == col_len - 1:
-        # print "aaa", prev, emis
-        # print prev,emis
-        return (prev) * (emis/2)
-    else:
-        # print "asd", prev, post, emis
-        return ((prev * post)) * (emis/2)
+# Calculate P(W|S_i)
+def emis_prob_user(index, col):
+    return (col[index]**(0.90))* ((len(col)-abs(index-y_axis))**1.5)
+
+
 e_prob = {}
 t_prob = {}
+e_prob_u = {}
+t_prob_u = {}
+
 for row in range(0,row_len):
     t_prob[row]={}
-    row_sum = 0;
+    t_prob_u[row]={}
+    row_sum = 0
+    row_sumu = 0
     for rown in range(0,row_len):
         t_prob[row][rown] = trans_prob(row,rown,row_len)
         row_sum+=t_prob[row][rown]
+        t_prob_u[row][rown] = trans_prob_user(row,rown,row_len)
+        row_sumu+=t_prob_u[row][rown]
     for rown in range(0,row_len):
         t_prob[row][rown] = math.log(1/(t_prob[row][rown]/float(row_sum)))
-    
-prob_array = {}
-posterior_prob_list = {}
+        t_prob_u[row][rown] = math.log(1/(t_prob_u[row][rown]/float(row_sumu)))    
+
 # Gibb's sampling
-for col in range(0, col_len):
-    e_prob[col] = {}
-    col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
-    length = len(col_list)
-    sum_trans_dif_post = float(0.00001)
-    sum_trans_dif_prev = float(0.00001)
-    sum_emis = float(0.0)
-    prob_array[col] = {}
-    posterior_prob_list[col] = {}
-    helper_list[col] = {}
-    for i, row in enumerate(col_list):
-        # print i,row
-        # for 1st column there is no previous state
-        if col == 0:
-            trans_prob_post = trans_prob(i, ridge[col + 1], length)
-            sum_trans_dif_post += trans_prob_post
+def calculate_prob():
+    for col in range(0, col_len):
+        e_prob[col] = {}
+        e_prob_u[col] = {}
+        col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
+        length = len(col_list)
+        sum_emis = float(0.0)
+        sum_emisu = float(0.0)
+        for i, row in enumerate(col_list):
             emis_probs = emis_prob(i, col_list)
             e_prob[col][i] = emis_probs
             sum_emis += emis_probs
-            # print trans_prob_post, 1, emis_probs
-            # emis_probs = 1
-            prob_array[col][i] = ([1, trans_prob_post, emis_probs])
-            # print prob_array[col][i]
-
-        # for last column there is no next state
-        elif col == col_len - 1:
-            trans_prob_prev = trans_prob(i, ridge[col - 1], length)
-            sum_trans_dif_prev += trans_prob_prev
-            emis_probs = emis_prob(i, col_list)
-            e_prob[col][i] = emis_probs
-            sum_emis += emis_probs
-            prob_array[col][i] = ([trans_prob_prev, 1, emis_probs])
-            # print prob_array[col][i]
-
-        else:
-            trans_prob_prev = trans_prob(i, ridge[col - 1], length)
-            sum_trans_dif_prev += trans_prob_prev
-            trans_prob_post = trans_prob(i, ridge[col + 1], length)
-            sum_trans_dif_post += trans_prob_post
-            emis_probs = emis_prob(i, col_list)
-            e_prob[col][i] = emis_probs
-            sum_emis += emis_probs
-            # emis_probs = 1
-            prob_array[col][i] = ([trans_prob_prev, trans_prob_post, emis_probs])
-            # print prob_array[col][i]
-    sum_of_col = 0
-    for index, row in enumerate(prob_array[col]):
-        probs = prob_array[col][index]
-        e_prob[col][index]+=0.00000001
-        e_prob[col][index] = math.log(1/(e_prob[col][index]/float(sum_emis)))
-        posterior_prob_list[col][index] = posterior_prob(probs[0] / sum_trans_dif_prev, probs[1] / sum_trans_dif_post,
-                                                         probs[2] / sum_emis, col)
-        sum_of_col += posterior_prob_list[col][index]
+            
+            emis_probsu = emis_prob_user(i, col_list)
+            e_prob_u[col][i] = emis_probsu
+            sum_emisu += emis_probsu
+        for index, row in enumerate(e_prob[col]):
+            e_prob[col][index]+=0.00000001
+            e_prob[col][index] = math.log(1/(e_prob[col][index]/float(sum_emis)))
+            e_prob_u[col][index]+=0.00000001
+            e_prob_u[col][index] = math.log(1/(e_prob_u[col][index]/float(sum_emisu)))
     # print posterior_prob_list[0]
 
-    for index, prob in enumerate(posterior_prob_list[col]):
-        if index == 0:
-            helper_list[col][index] = (posterior_prob_list[col][index] / sum_of_col)
-        else:
-            helper_list[col][index] = (posterior_prob_list[col][index] / sum_of_col + helper_list[col][index - 1])
-    
+
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
-def mcmc(ridges):
-    #ridges = [0] * col_len
-    for x in range(0, 1000):
-        col = (random.randint(1, col_len-1))
-        for i in range(col, -1,-1):
-            ridges[i] = random_roll(i)
-        for i in range(col+1, col_len):
-            ridges[i] = random_roll(i)
-            
-    final_ridge=[]
-    for x in range(0, 2000):
-        col = (random.randint(1, col_len-1))
-        for i in range(col-1, -1,-1):
-            ridges[i] = random_roll(i)
-        for i in range(col+1, col_len):
-            ridges[i] = random_roll(i)
-            tmp_ridge = ridges[:]
-        final_ridge.append(tmp_ridge)
-
-    rid = array(final_ridge)
-    ret_ridge = []
-    for col in range(0, col_len):
-        ret_ridge.append(Counter(rid[:,col]).most_common()[0][0])
-    # print Counter(col_list).items()
-    # print col_list
-    return ret_ridge
-
-def usr_mcmc(ridges,col,row):
-    #ridges = [0] * col_len
-    ridges = [row]*col_len
-    for x in range(0, 1000):
-        #print x
-        for i in range(col-1, -1,-1):
-            ridges[i] = random_roll(i)
-        for i in range(col+1, col_len):
-            ridges[i] = random_roll(i)
-            
-    final_ridge=[]
-    for x in range(0, 2000):
-    # print x
-        for i in range(col-1, -1,-1):
-            ridges[i] = random_roll(i)
-        for i in range(col+1, col_len):
-            ridges[i] = random_roll(i)
-            tmp_ridge = ridges[:]
-        final_ridge.append(tmp_ridge)
-
-    rid = array(final_ridge)
-    ret_ridge = []
-    for col in range(0, col_len):
-        ret_ridge.append(Counter(rid[:,col]).most_common()[0][0])
-    # print Counter(col_list).items()
-    # print col_list
-    return ret_ridge
-
-
-x_axis = int(sys.argv[4])
-y_axis = int(sys.argv[3])
 #imsave(output_filename, draw_edge(input_image, ridge, (i % 255, x % 255, (i + x) % 255), 5))
-
+calculate_prob()
 sim_ridge = simple()
 imsave(output_filename, draw_edge(input_image, sim_ridge, (255, 0,0), 5))
-'''
-mcmc_ridge = mcmc(sim_ridge)
-# output answer
-#imsave(output_filename, draw_edge(input_image, mcmc_ridge, (0, 0,255), 5))
 
-mcmc_usr_ridge = usr_mcmc(sim_ridge,x_axis,y_axis)
-# output answer
-imsave(output_filename, draw_edge(input_image, mcmc_usr_ridge, (0, 255,0), 5))
-'''
 hmm_ridge = hmm_viterbi()
 imsave(output_filename, draw_edge(input_image, hmm_ridge, (0, 255,0), 5))
+
+hmm_usr_ridge = hmm_viterbi_user()
+imsave(output_filename, draw_edge(input_image, hmm_usr_ridge, (0, 0,255), 5))
+
 '''
 # print random_roll(100),row_len
 imsave(output_filename,draw_edge1(input_image,x_axis, y_axis, (0, 0,255), 5))
