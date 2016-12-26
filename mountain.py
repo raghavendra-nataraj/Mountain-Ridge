@@ -34,8 +34,11 @@ from PIL import Image
 from numpy import *
 from scipy.ndimage import filters
 from scipy.misc import imsave
+from copy import deepcopy
 import sys
+import math
 import random
+import operator
 from collections import Counter
 
 global col_len, row_len
@@ -104,6 +107,31 @@ def simple():
     return edge_list
 
 
+def hmm_viterbi():
+    viterbi = {}
+    viterbi[0] = {}
+    col_list = [int(edge_strength[row][0]) for row in range(0, row_len)]
+    length = len(col_list)
+    for row in range(0,row_len):
+        viterbi[0][row] = (float(emis_p(0,row)),[row])
+    for col in range(1,col_len):
+        viterbi[col] = {}
+        col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
+        for row in range(0,row_len):
+            results =  []
+            for row_k in range(0,row_len):
+                tmpval = viterbi[col-1][row_k][0] + trans_p(row_k,row)
+                results.append((tmpval,viterbi[col-1][row_k][1]))
+            value,ridgev = min(results,key=operator.itemgetter(0))
+            ridgetmp = deepcopy(ridgev)
+            ridgetmp.append(row)
+            viterbi[col][row] = ((value + emis_p(col,row)),ridgetmp)
+    results =  []
+    for row in range(0,row_len):
+        results.append(viterbi[col_len-1][row])
+    value,ridgev = min(results,key=operator.itemgetter(0))
+    return ridgev
+
 # print col_len
 ridge = [0] * col_len
 # print ridge
@@ -113,15 +141,21 @@ ridge = [0] * col_len
 # Question 1 ends here and ridge is the answer
 ##############################################
 
+def trans_p(curr, n_curr):
+    return t_prob[curr][n_curr]
 # Calculate P(S_i|S_i-1) or P(S_i|S_i+1)
 def trans_prob(curr, n_curr, length):
-    weight = 2
+    weight = 20
     return (length - abs(curr - n_curr))**weight
 
 
 # Calculate P(W|S_i)
+def emis_p(col,row):
+    return e_prob[col][row]
+
+# Calculate P(W|S_i)
 def emis_prob(index, col):
-    return (col[index]**(0.90))#* ((len(col)-index))
+    return (col[index])* ((len(col)-index))
 
 
 def random_roll(col):
@@ -147,12 +181,22 @@ def posterior_prob(prev, post, emis, column):
     else:
         # print "asd", prev, post, emis
         return ((prev * post)) * (emis/2)
-
-
+e_prob = {}
+t_prob = {}
+for row in range(0,row_len):
+    t_prob[row]={}
+    row_sum = 0;
+    for rown in range(0,row_len):
+        t_prob[row][rown] = trans_prob(row,rown,row_len)
+        row_sum+=t_prob[row][rown]
+    for rown in range(0,row_len):
+        t_prob[row][rown] = math.log(1/(t_prob[row][rown]/float(row_sum)))
+    
 prob_array = {}
 posterior_prob_list = {}
 # Gibb's sampling
 for col in range(0, col_len):
+    e_prob[col] = {}
     col_list = [int(edge_strength[row][col]) for row in range(0, row_len)]
     length = len(col_list)
     sum_trans_dif_post = float(0.00001)
@@ -168,6 +212,7 @@ for col in range(0, col_len):
             trans_prob_post = trans_prob(i, ridge[col + 1], length)
             sum_trans_dif_post += trans_prob_post
             emis_probs = emis_prob(i, col_list)
+            e_prob[col][i] = emis_probs
             sum_emis += emis_probs
             # print trans_prob_post, 1, emis_probs
             # emis_probs = 1
@@ -179,6 +224,7 @@ for col in range(0, col_len):
             trans_prob_prev = trans_prob(i, ridge[col - 1], length)
             sum_trans_dif_prev += trans_prob_prev
             emis_probs = emis_prob(i, col_list)
+            e_prob[col][i] = emis_probs
             sum_emis += emis_probs
             prob_array[col][i] = ([trans_prob_prev, 1, emis_probs])
             # print prob_array[col][i]
@@ -189,6 +235,7 @@ for col in range(0, col_len):
             trans_prob_post = trans_prob(i, ridge[col + 1], length)
             sum_trans_dif_post += trans_prob_post
             emis_probs = emis_prob(i, col_list)
+            e_prob[col][i] = emis_probs
             sum_emis += emis_probs
             # emis_probs = 1
             prob_array[col][i] = ([trans_prob_prev, trans_prob_post, emis_probs])
@@ -196,6 +243,8 @@ for col in range(0, col_len):
     sum_of_col = 0
     for index, row in enumerate(prob_array[col]):
         probs = prob_array[col][index]
+        e_prob[col][index]+=0.00000001
+        e_prob[col][index] = math.log(1/(e_prob[col][index]/float(sum_emis)))
         posterior_prob_list[col][index] = posterior_prob(probs[0] / sum_trans_dif_prev, probs[1] / sum_trans_dif_post,
                                                          probs[2] / sum_emis, col)
         sum_of_col += posterior_prob_list[col][index]
@@ -206,11 +255,7 @@ for col in range(0, col_len):
             helper_list[col][index] = (posterior_prob_list[col][index] / sum_of_col)
         else:
             helper_list[col][index] = (posterior_prob_list[col][index] / sum_of_col + helper_list[col][index - 1])
-            # print helper_list[col]
-            #
-            # x = random.randint(0,1)
-            # # print x
-
+    
 # ridge = [edge_strength.shape[0] / 2] * edge_strength.shape[1]
 def mcmc(ridges):
     #ridges = [0] * col_len
@@ -274,13 +319,17 @@ y_axis = int(sys.argv[3])
 
 sim_ridge = simple()
 imsave(output_filename, draw_edge(input_image, sim_ridge, (255, 0,0), 5))
+'''
 mcmc_ridge = mcmc(sim_ridge)
 # output answer
-imsave(output_filename, draw_edge(input_image, mcmc_ridge, (0, 0,255), 5))
+#imsave(output_filename, draw_edge(input_image, mcmc_ridge, (0, 0,255), 5))
 
 mcmc_usr_ridge = usr_mcmc(sim_ridge,x_axis,y_axis)
 # output answer
 imsave(output_filename, draw_edge(input_image, mcmc_usr_ridge, (0, 255,0), 5))
+'''
+hmm_ridge = hmm_viterbi()
+imsave(output_filename, draw_edge(input_image, hmm_ridge, (0, 255,0), 5))
 '''
 # print random_roll(100),row_len
 imsave(output_filename,draw_edge1(input_image,x_axis, y_axis, (0, 0,255), 5))
